@@ -1,0 +1,95 @@
+library(Seurat)
+library(dplyr)
+library(MAST)
+library(tidyverse)
+library(ggthemes)
+library(ggpubr)
+
+# Change directory for testing purposes. Subsequent paths are relative.
+setwd("/Dropbox/Code_checking/")
+
+svz <- readRDS("data/ex_seurat.SVZ.annotated.2020-04-27.rds")
+
+svz <- subset(svz, Celltype.LowRes !="Doublet")
+DimPlot(svz, group.by = "Celltype.LowRes", pt.size =1)
+
+#subset to young and old controls only
+svz <- subset (svz, AgeCond=="O_Control"|AgeCond=="Y_Control")
+
+#=======================================================================================
+# Young vs Old cell type DE in microglia
+#=======================================================================================
+
+# Append age to celltype label and add to metadata
+Microglia <- subset(svz, Celltype.LowRes=="Microglia")
+Microglia <- NormalizeData(Microglia)
+
+DefaultAssay(Microglia) <- "RNA"
+Idents(Microglia) <- "AgeCond"
+
+Microglia_de <-     FindMarkers(object = Microglia,
+                                ident.1 = "O_Control",
+                                ident.2 = "Y_Control",
+                                test.use = "MAST",
+                                max.cells.per.ident = 1000,
+                                min.pct = 0.0,
+                                logfc.threshold = log(0),
+                                random.seed = 3)
+
+Microglia_de$fdr <- p.adjust(Microglia_de$p_val, method = "fdr", n = 31053)
+
+write.table(Microglia_de, file = "data/Microglia_Old_vs_young_mast_EXERCISE.txt", sep = "\t", quote = F)
+saveRDS(Microglia_de, "data/Microglia_Old_vs_young_mast_EXERCISE.rds")
+
+
+
+#======================================================================================
+### Make violin plots
+#======================================================================================
+
+meta <- svz[[]]
+pca <- Embeddings(object = svz, reduction = "pca")[, 1:20]
+umap <- Embeddings(object = svz, reduction = "umap")
+rna <- t(as.matrix(GetAssayData(object = svz[["RNA"]], slot = "data")))
+d <- as.data.frame(cbind(meta, umap, pca, rna))
+
+d <- d[sample(nrow(d)),]
+
+
+#subset aging only
+d$AgeCond <- factor(d$AgeCond, levels=c("Y_Control", "O_Control"), ordered=T)
+
+
+# Plot parameters
+a1 = 0.25
+a2 = 0.7
+s = 0.4
+ageColors <- c("deepskyblue", "firebrick")
+
+#Plot in one cell type
+genes <- c("Socs3","Il10ra", "Tnf","Il1b", "Lgals3", "Apoe", "Tmem119", "P2ry12", "Cd86", "Ifi27l2a", "H2-K1")
+
+
+for (gene in genes){
+    print(
+        ggplot(d, aes(x=Age, y= d[,gene])) +
+            geom_point(size=s, alpha=a1, color="black", position = position_jitter(w = 0.2, h = 0)) +
+            geom_violin(aes(fill=Age), alpha=a2, trim=T,scale="width", draw_quantiles = c(.5)) +
+            scale_fill_manual(values=ageColors) +
+            scale_y_continuous(limits = c(0,NA),expand = expansion(mult = c(0.05, 0.065))) +
+            theme_classic()+
+            theme(axis.text.x = element_text(angle=0, hjust=0.5, size = 10, color="black"))+
+            theme(axis.text.y = element_text(size = 8,color="black")) +
+            theme(strip.text.x = element_text(size = 10)) +
+            labs(title=gene)+
+            ylab(gene)+
+            xlab(NULL) +
+            theme(legend.position="none")+
+            theme(panel.border = element_rect(colour = "black", fill=NA, size=1),  axis.line = element_blank())+
+            stat_compare_means(method = "wilcox", comparisons = list(c("Old", "Young")), size=3, tip.length = 0.01, step.increase = 0.5)
+    )
+    
+    ggsave(paste0("plots/",gene,"_Microglia_violin_Liu.pdf"), height=3, width=3)
+}
+
+
