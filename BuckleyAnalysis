@@ -1,0 +1,110 @@
+## Buckley dataset analysis
+library(Seurat)
+library(dplyr)
+library(ggthemes)
+library(ggpubr)
+
+setwd("/")
+svz <- readRDS("multi_intergrated_seurat_Dec2020.rds")
+
+micro <- subset(svz, Celltype.LowRes=="Microglia")
+rm(svz)
+
+unique(micro$Age)
+# 29.00 20.80  6.70  4.70 22.57  5.40 14.50 16.53  9.47  3.33 18.58 20.60 21.57  4.30 12.47 10.43  3.30  8.40 22.60 23.90 16.83  3.60 24.90 18.87 14.77 25.93
+# old > 29.00, 22.57, 21.57,22.60 ,23.90, 24.90, 25.93
+# young > 4.70 5.40 3.33 4.30 3.30 3.60 6.70
+
+##make a new column where ages are grouped into young, old, mid
+micro$AGE <- ifelse(micro$Age < 7, "Young", ifelse(micro$Age > 22, "Old", "mid"))
+micro <- subset(micro, AGE != "mid")
+
+# Make plotting data
+meta <- micro[[]]
+pca <- Embeddings(object = micro, reduction = "pca")[, 1:20]
+umap <- Embeddings(object = micro, reduction = "umap")
+rna <- t(as.matrix(GetAssayData(object = micro[["RNA"]], slot = "data")))
+d <- as.data.frame(cbind(meta, umap, pca, rna))
+
+### Make violin plots
+d$AGE <- factor(d$AGE, levels=c("Young", "Old"), ordered=T)
+
+        # Plot parameters
+        a1 = 0.25
+        a2 = 0.7
+        s = 0.4
+        ageColors <- c("deepskyblue", "firebrick")
+        
+        gene <- "Socs3"
+        p1 <- ggplot(d, aes(x=AGE, y=Socs3)) +
+            geom_point(size=s, alpha=a1, color="black", position = position_jitter(w = 0.2, h = 0)) +
+            geom_violin(aes(fill=AGE), alpha=a2, trim=T,scale="width", draw_quantiles = c(.5)) +
+            scale_fill_manual(values=ageColors) +
+            scale_y_continuous(limits = c(0,NA),expand = expansion(mult = c(0.05, 0.065))) +
+            theme_classic()+
+            theme(axis.text.x = element_text(angle=0, hjust=0.5, size = 10, color="black"))+
+            theme(axis.text.y = element_text(size = 8,color="black")) +
+            theme(strip.text.x = element_text(size = 10)) +
+            labs(title=gene)+
+            ylab(gene)+
+            xlab(NULL) +
+            theme(legend.position="none")+
+            theme(panel.border = element_rect(colour = "black", fill=NA, size=1),  axis.line = element_blank())+
+            stat_compare_means(method = "wilcox", comparisons = list(c("Old", "Young")), size=3, tip.length = 0.01, step.increase = 0.5)
+        
+        p1
+        
+        ggsave(paste0("plots/violin_Microglia_Cd74.pdf"), p1,  height=3, width=3)
+        
+        
+        genes <- c("Socs3","Il10ra", "Tnf","Il1b", "Lgals3", "Apoe", "Tmem119", "P2ry12", "Cd86", "Ifi27l2a", "H2-K1")
+        
+        
+        for (gene in genes){
+            print(
+                ggplot(d, aes(x=AGE, y= d[,gene])) +
+                    geom_point(size=s, alpha=a1, color="black", position = position_jitter(w = 0.2, h = 0)) +
+                    geom_violin(aes(fill=AGE), alpha=a2, trim=T,scale="width", draw_quantiles = c(.5)) +
+                    scale_fill_manual(values=ageColors) +
+                    scale_y_continuous(limits = c(0,NA),expand = expansion(mult = c(0.05, 0.065))) +
+                    theme_classic()+
+                    theme(axis.text.x = element_text(angle=0, hjust=0.5, size = 10, color="black"))+
+                    theme(axis.text.y = element_text(size = 8,color="black")) +
+                    theme(strip.text.x = element_text(size = 10)) +
+                    labs(title=gene)+
+                    ylab(gene)+
+                    xlab(NULL) +
+                    theme(legend.position="none")+
+                    theme(panel.border = element_rect(colour = "black", fill=NA, size=1),  axis.line = element_blank())+
+                    stat_compare_means(method = "wilcox", comparisons = list(c("Old", "Young")), size=3, tip.length = 0.01, step.increase = 0.5)
+            )
+            
+            ggsave(paste0("plots/",gene,"_Microglia_violin.pdf"), height=3, width=3)
+        }
+
+
+#=======================================================================================
+# Young vs Old Microglia DE
+#=======================================================================================
+
+        DefaultAssay(micro) <- "RNA"
+        micro <- NormalizeData(micro)
+        
+        Idents(micro) <- "AGE"
+        
+        Microglia_de <-     FindMarkers(object = micro,
+                                        ident.1 = "Old",
+                                        ident.2 = "Young",
+                                        test.use = "MAST",
+                                        max.cells.per.ident = 1000,
+                                        min.pct = 0.0,
+                                        logfc.threshold = log(0),
+                                        random.seed = 3)
+        
+        Microglia_de$fdr <- p.adjust(Microglia_de$p_val, method = "fdr", n = 31053)
+        
+        saveRDS(Microglia_de, "data/Microglia_Old_vs_young_mast_Buckley.rds")
+
+
+
+        
