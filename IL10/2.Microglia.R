@@ -12,7 +12,7 @@ library(ggpubr)
     
 # Modify path below. All subsequent paths are relative.
     setwd("~/Dropbox/Code/")
-    svz <- readRDS("data/seurat/Labeled_svz_seurat_IL10_conc_2023-06-13.rds")
+    svz <- readRDS("data/IL10_svz_seurat_IL10.rds")
     
     
     Microglia <- subset(svz, Celltype== "Microglia")
