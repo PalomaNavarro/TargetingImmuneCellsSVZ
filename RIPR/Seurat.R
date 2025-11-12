@@ -253,4 +253,78 @@ t10 <- tableau_color_pal(palette = "Tableau 10")(10)
     rna <- t(as.matrix(GetAssayData(object = svz[["RNA"]], slot = "data")))
     d <- as.data.frame(cbind(meta, umap, pca, rna))
     saveRDS(d, file = paste0("data/RIPR_svzPlotDf.rda"))
+
+#====================================================================
+## Cell proportions
+#====================================================================
+
+library(tidyverse)
+library(Seurat)
+library(ggthemes)
+library(ggpubr)
+
+svz <- readRDS("data/RIPR_svz_tcr_seurat.rds")
+
+DefaultAssay(svz) <- "SCT"
+meta <- svz[[]]
+
+# Forget obj to free memory
+rm(svz)
+
+# Convert to tidy format
+meta <- meta %>% rownames_to_column("Cell") %>% tibble::as_tibble()
+
+
+# Modify the group_by arguments to treatment, celltype columns
+Celltype.Freq <- meta %>% 
+    group_by(orig.ident, Celltype) %>%
+    summarise (n = n()) %>%
+    mutate(freq = n / sum(n)) %>%
+    mutate(percent = paste0(round(100 * n/sum(n), 2), "%"))
+
+
+# calculate change in proportion as log2 RIPR/control in frequency for each celltype
+Celltype.Freq <- Celltype.Freq %>%
+    filter(orig.ident %in% c("OldControl", "OldRIPR")) %>%
+    group_by(Celltype) %>%
+    mutate(proportion = log2(freq[orig.ident == "OldRIPR"] / freq[orig.ident == "OldControl"])) %>%
+    ungroup()
+
+
+CELLS <- c("Astrocytes_qNSCs", "aNSCs_NPCs", "Neuroblasts","Neurons",
+            "Oligodendrocytes", "OPC","Ependymal","Endothelial", "Mural_cells",
+           "Microglia", "Macrophages","T_cells")
+
+
+Celltype.Freq$Celltype <- factor(Celltype.Freq$Celltype,  levels=CELLS, ordered=T)
+
+Celltype.Freq <- subset(Celltype.Freq, orig.ident=="OldControl")
+
+#colors to match tsne
+new_colors <- c("#499894","#59A14F","#8CD17D", "#86BCB6", 
+                         "#4E79A7" ,"#A0CBE8", "#ffe45e","#FFBE7D","#B6992D",
+                         "#b56576","#FF9D9A","#E15759")
+
+p3 <- ggplot(Celltype.Freq, aes(x = Celltype, y = proportion)) +
+    geom_col(aes(x = Celltype, y = proportion ,fill = Celltype), show.legend = FALSE )+
+    theme(axis.text.x = element_text(angle=45, hjust=1, size = 14), axis.title.x = element_blank()) +
+    ggtitle("") +
+    theme(axis.title.y = element_text(size = 14, face = "plain")) +
+    theme(axis.text.y = element_text(size = 14)) +
+    theme(axis.title.y = element_text(size = 14, face = "plain", margin = margin(r = 20))) +
+    theme(axis.title.x = element_blank()) +
+    theme(plot.title = element_text(size=16, face = "plain")) +
+    labs(y = "Log2 Enrichment (RIPR/Control)") +
+    theme(panel.background = element_blank()) +
+    scale_fill_manual(values = new_colors) +
+    #scale_color_manual(values = new_colors) +
+    ggtitle("Changes in cell number with RIPR in old mice") +
+    geom_hline(aes(yintercept=0), color="darkgrey", linetype="dashed")+
+    theme(axis.line = element_line(colour = "black"))
+
+p3
+
+ggsave("plots/Proportions_RIPR_control.pdf", p3, width = 8, height = 4)
+
+
     
