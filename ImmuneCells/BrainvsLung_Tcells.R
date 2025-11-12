@@ -15,7 +15,7 @@ library(ggplot2)
 
 # Modify path below. All subsequent paths are relative.
 setwd("~/Dropbox/Code/")
-data <- readRDS("data/seurat/tc_tcr_seurat_2020-03-27.rds")
+data <- readRDS("data/Brain_lung_Tcells_seurat.rds")
 
 t20 <- tableau_color_pal(palette = "Tableau 20")(20)
 t10 <- tableau_color_pal(palette = "Tableau 10")(10)
@@ -99,8 +99,6 @@ orig <- c('#702670','#0e9594')
     DimPlot(tc,  pt.size =0.3, group.by = "Celltype.Final", cols= t20, order=F)
     
     
-    saveRDS(tc, "data/Brain_lung_Tcells_seurat_June25.rds")
-    
 
 ##====================================================================================================================
     
@@ -123,7 +121,7 @@ orig <- c('#702670','#0e9594')
  ##====================================================================================================================
     
     
-    tc <- readRDS("data/seurat/Brain_lung_Tcells_seurat.rds")
+    tc <- readRDS("data/Brain_lung_Tcells_seurat.rds")
    
      ## Get top genes for each cluster and make heatmaps (Fig1f)
      clusterMarkers <- FindAllMarkers(object=tc)
