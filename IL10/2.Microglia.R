@@ -10,7 +10,8 @@ library(ggpubr)
     t20 <- tableau_color_pal(palette = "Tableau 20")(20)
     t10 <- tableau_color_pal(palette = "Tableau 10")(10)
     
-    setwd("~/Dropbox/Code_revision/")
+# Modify path below. All subsequent paths are relative.
+    setwd("~/Dropbox/Code/")
     svz <- readRDS("data/seurat/Labeled_svz_seurat_IL10_conc_2023-06-13.rds")
     
     
