@@ -11,6 +11,7 @@ library(cowplot)
 library(ggpubr)
 sessionInfo()
 
+# Modify path below. All subsequent paths are relative.
 setwd("~/Dropbox/Code/")
 svz <- readRDS("data/seurat/Labeled_svz_seurat_IL10_conc_2023-06-13.rds")
 tc <- subset(svz, Celltype =="T_cells")
