@@ -9,8 +9,8 @@ library(scales)
 library(glmnet)
 
 # Modify path below. All subsequent paths are relative.
-setwd("~/Dropbox/Code")
-svz <- readRDS("/data/Labeled_svz_seurat_IL10_conc_2023-06-13.rds")
+setwd("~/Dropbox/Code/")
+svz <- readRDS("data/IL10_svz_seurat_IL10.rds")
 
 # Inspect
     Convert_to_Dataframe <- function(svz) {
