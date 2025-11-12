@@ -245,8 +245,8 @@ setwd("~/Dropbox/Code")
 #======================================================================================
     # Gene Expression Vertical Violin Plots by cell type > Figure S6E
     
-    setwd("~/Dropbox/Code_revision/")
-    d <- readRDS("data/seurat/svzPlotDf_label_2023-06-13.rda")
+    setwd("~/Dropbox/Code")
+    d <- readRDS("data/IL10_svzPlotDf.rda")
     
     d <- subset(d, orig.ident != "WT50")
     d <- subset(d, orig.ident != "Mut50")
