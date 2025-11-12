@@ -13,7 +13,7 @@ sessionInfo()
 
 # Modify path below. All subsequent paths are relative.
 setwd("~/Dropbox/Code/")
-svz <- readRDS("data/seurat/Labeled_svz_seurat_IL10_conc_2023-06-13.rds")
+svz <- readRDS("data/IL10_svz_seurat_IL10.rds")
 tc <- subset(svz, Celltype =="T_cells")
 rm(svz)
 
@@ -24,9 +24,6 @@ umap <- Embeddings(object = tc, reduction = "umap")
 rna <- t(as.matrix(GetAssayData(object = tc[["RNA"]], slot = "data")))
 d <- as.data.frame(cbind(meta, umap, pca, rna))
 
-
-
-d <- readRDS("data/seurat/tcPlotDf_label_2023-06-13.rda")
 
 ## WT5 and Mutant 5
 
