@@ -13,6 +13,7 @@ library(viridis)
 library(tidyr)
 sessionInfo()
 
+# Modify path below. All subsequent paths are relative.
 setwd("~/Dropbox/Code")
 
 #======================================================================================
